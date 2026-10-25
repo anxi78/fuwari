@@ -11,15 +11,14 @@ import type {
 import { LinkPreset } from "./types/config";
 
 export const siteConfig: SiteConfig = {
-	title: "Betsy Blog",
-	subtitle: "分享网络技术、服务器部署、Unity开发、AI技术应用与原理",
-	description:
-		"分享网络技术、服务器部署、Unity开发、AI技术应用与原理、作者为流转星(Betsy)",
+	title: "Anxi Blog",
+	subtitle: "把折腾过的东西记下来，也留点时间摸鱼",
+	description: "Anxi 的个人博客 —— 折腾、记录、偶尔摸鱼。",
 
 	keywords: [],
 	lang: "zh_CN", // 'en', 'zh_CN', 'zh_TW', 'ja', 'ko', 'es', 'th'
 	themeColor: {
-		hue: 361, // Default hue for the theme color, from 0 to 360. e.g. red: 0, teal: 200, cyan: 250, pink: 345
+		hue: 250, // Default hue for the theme color, from 0 to 360. e.g. red: 0, teal: 200, cyan: 250, pink: 345
 		fixed: true, // Hide the theme color picker for visitors
 		forceDarkMode: true, // Force dark mode and hide theme switcher
 	},
@@ -32,15 +31,15 @@ export const siteConfig: SiteConfig = {
 			enable: true, // Display the credit text of the banner image
 			text: "Pixiv @chokei", // Credit text to be displayed
 
-			url: "https://img.micostar.cc/random", // (Optional) URL link to the original artwork or artist's page
+			url: "", // (Optional) URL link to the original artwork or artist's page
 		},
 	},
 	background: {
-		enable: true, // Enable background image
-		src: "https://img.micostar.cc/images/horizontal/h_031.webp", // 默认固定背景（横屏 31 号）
-		srcLandscape: "https://img.micostar.cc/images/horizontal/h_031.webp", // 横屏固定背景：EO-Random-Photo 第 31 号
-		srcPortrait: "https://img.micostar.cc/images/vertical/v_025.webp", // 竖屏固定背景：新上传的图片
-		randomSrc: "https://img.micostar.cc/random", // 随机图 API，点击右上角骰子按钮后启用
+		enable: false, // Enable background image
+		src: "", // 默认固定背景
+		srcLandscape: "",
+		srcPortrait: "",
+		randomSrc: "",
 		position: "center", // Background position: 'top', 'center', 'bottom'
 		size: "cover", // Background size: 'cover', 'contain', 'auto'
 		repeat: "no-repeat", // Background repeat: 'no-repeat', 'repeat', 'repeat-x', 'repeat-y'
@@ -51,68 +50,26 @@ export const siteConfig: SiteConfig = {
 		enable: true, // Display the table of contents on the right side of the post
 		depth: 2, // Maximum heading depth to show in the table, from 1 to 3
 	},
-	favicon: [
-		// Leave this array empty to use the default favicon
-		{
-			src: "https://image.cloudrunmax.top/file/CF/1756734381495_58fc963052f0a5cd8ce123b8d10c4a53.jpg", // Path of the favicon, relative to the /public directory
-			//   theme: 'light',              // (Optional) Either 'light' or 'dark', set only if you have different favicons for light and dark mode
-			//   sizes: '32x32',              // (Optional) Size of the favicon, set only if you have favicons of different sizes
-		},
-	],
-	apps: [
-		{
-			name: "私人AI网站",
-			url: "https://ai0728.com.cn/",
-			image: "/favicon/openwebui.webp",
-			description: "智能对话与创作助手",
-			external: true,
-		},
-		{
-			name: "私人云盘",
-			url: "https://cloudrunmax.top/",
-			image: "/favicon/cloudreve.webp",
-			description: "内容管理入口",
-			external: true,
-		},
-		{
-			name: "私人图床",
-			url: "https://image.cloudrunmax.top/",
-			image: "/favicon/imagebed.webp",
-			description: "利用CloudflareR2搭建的私人图床",
-			external: true,
-		},
-	],
+	favicon: [],
+	apps: [],
 };
 
 export const navBarConfig: NavBarConfig = {
 	links: [
 		LinkPreset.Home,
 		LinkPreset.Archive,
-		LinkPreset.Friends,
-		LinkPreset.Apps,
-		LinkPreset.Donate,
-		LinkPreset.Works,
-		{
-			name: "数据",
-			children: [LinkPreset.Stats, LinkPreset.Status, LinkPreset.Monitor],
-		},
 	],
 };
 
 export const profileConfig: ProfileConfig = {
-	avatar: "/images/avatar.webp", // Relative to the /src directory. Relative to the /public directory if it starts with '/'
-	name: "流转星(Betsy)",
-	bio: ["爱我所爱，我们是彼此永远的动力"],
+	avatar: "/images/avatar.png", // Relative to the /src directory. Relative to the /public directory if it starts with '/'
+	name: "Anxi",
+	bio: ["一个13岁初一小屁孩"],
 	links: [
-		{
-			name: "Bilibli",
-			icon: "fa6-brands:bilibili",
-			url: "https://space.bilibili.com/420378171",
-		},
 		{
 			name: "GitHub",
 			icon: "fa6-brands:github",
-			url: "https://github.com/Besty0728",
+			url: "https://github.com/anxi78",
 		},
 	],
 };
@@ -125,22 +82,22 @@ export const licenseConfig: LicenseConfig = {
 
 //图片回退
 export const imageFallbackConfig: ImageFallbackConfig = {
-	enable: true,
-	originalDomain: "img.micostar.cc", // 主力图床 (新项目)
-	fallbackDomain: "image.cloudrunmax.top", // R2 备用图床 (旧项目)
+	enable: false,
+	originalDomain: "",
+	fallbackDomain: "",
 };
 
 export const umamiConfig: UmamiConfig = {
-	enable: true,
-	baseUrl: "https://umami.micostar.cc",
-	shareId: "X9ZZZ5l2xErS44Rc",
+	enable: false,
+	baseUrl: "",
+	shareId: "",
 	timezone: "Asia/Shanghai",
 };
 
 // 防盗链/域名保护配置
 export const antiLeechConfig: AntiLeechConfig = {
-	enable: true,
-	officialSites: [{ url: "https://www.micostar.cc", name: "主站" }],
+	enable: false,
+	officialSites: [{ url: "https://anxi888.com", name: "主站" }],
 	debug: false,
 	warningTitle: "⚠️ 域名安全警告",
 	warningMessage:
