@@ -1,7 +1,7 @@
 ---
-title: 手搓 dsh-yuanbao：从「图片丢了」到「引用消息全打通」
+title: 手搓 dsh-yuanbao：从「群里 @ 它不回」到「引用消息全打通」
 published: 2026-10-25T21:30:00
-description: '记录给 DSH 写元宝通道插件的完整过程，以及官方 dsh-yuanbao 原版的几个真实问题。'
+description: '从「群里 @ 它一次都不回」开始，记录给 DSH 写元宝通道插件的完整过程，以及官方原版的几个真实问题。'
 tags: [DSH, 插件开发, 逆向, 踩坑记录]
 draft: false
 lang: 'zh_CN'
@@ -13,9 +13,13 @@ lang: 'zh_CN'
 
 元宝官方给 DSH 写了一个通道插件 `dsh-yuanbao`，功能是：把元宝 IM 的消息接进 DSH，让 Agent 能在群里聊天、回消息。
 
-装上之后，基本功能是通的。但用着用着就发现不对劲——**在群里引用一张图片发给它，它只看到 `[image]` 三个字，图片内容完全丢失。**
+装上之后，私聊是通的。但一进群就出问题：
 
-于是就有了这个项目：fork 一份自己改。
+**在群里 @ 它，它不回。**
+
+不是偶尔不回，是**一次都不回**。消息发出去，界面上什么反应都没有，就像那个 @ 从来没发生过。
+
+这就是一切的起点。
 
 ---
 
@@ -32,27 +36,7 @@ lang: 'zh_CN'
 
 **零测试、创建即停更、两个月无维护。** 所以下面这些问题，本质上不是「写错了」，而是「没人测过」。
 
-### 问题一：群消息发不出去（`bot_id is required`）
-
-`bridge.ts` 里，发群消息时会单独构造一个 account 对象：
-
-```typescript
-// 原版写法（有问题）
-const account = gatewayAccountFromConfig(this.config);
-```
-
-这个新对象上 `botId` 是 `undefined`。而元宝平台校验发送者身份时，要求 `fromAccount` 必须有值，于是报「参数无效：bot_id is required」。
-
-**修法**：复用 gateway 已经解析好的 account 对象。
-
-```typescript
-// Reuse the gateway's account: sign-token resolution stored the bot id on
-// that exact object. Building a second account here would leave `botId`
-// undefined and make every group send fail the `fromAccount` check.
-const account = gateway.account ?? gatewayAccountFromConfig(this.config);
-```
-
-### 问题二：@提及判定失效，所有群消息都不回
+### 问题一：@提及判定失效，所有群消息都不回
 
 群聊里判断「有没有 @ 我」时，原版是这么写的：
 
@@ -66,7 +50,33 @@ if (customContent?.user_id === botId) { ... }
 - 确实没人 @ 我
 - 我根本没有身份可以比对
 
+**这就是我踩到的第一个坑。** 表面上「插件装好了、也连上了」，但群里怎么 @ 都没反应——因为它在更早的一步就把消息丢掉了，连日志都只是轻描淡写一句「group message without mention」。
+
 **修法**：优先用配置的 `botId`，否则回退到 sign-token 解析出的 id；两种情况分开打日志。
+
+### 问题二：群消息发不出去（`bot_id is required`）
+
+解决完 @提及，群消息终于能进来了。但接着发现：**回复发不出去。**
+
+平台返回「参数无效：bot_id is required」。
+
+翻 `bridge.ts` 才发现，发群消息时会单独构造一个 account 对象：
+
+```typescript
+// 原版写法（有问题）
+const account = gatewayAccountFromConfig(this.config);
+```
+
+这个新对象上 `botId` 是 `undefined`。而元宝平台校验发送者身份时，要求 `fromAccount` 必须有值。
+
+**修法**：复用 gateway 已经解析好的 account 对象。
+
+```typescript
+// Reuse the gateway's account: sign-token resolution stored the bot id on
+// that exact object. Building a second account here would leave `botId`
+// undefined and make every group send fail the `fromAccount` check.
+const account = gateway.account ?? gatewayAccountFromConfig(this.config);
+```
 
 ### 问题三：发送失败还谎报成功
 
@@ -89,9 +99,11 @@ if (customContent?.user_id === botId) { ... }
 
 ---
 
-## 我要解决的问题：引用消息
+## 接着要解决的问题：引用消息
 
-上面那些是「顺手修」的。真正让我动手 fork 的是这个：
+上面那些是「让它能正常在群里说话」的基础修复。
+
+但真正让我下决心 fork 自己维护的，是另一个更麻烦的东西——**引用消息。**
 
 ### 元宝的消息结构限制
 
@@ -109,7 +121,7 @@ if (customContent?.user_id === botId) { ... }
 再引用那张图 + @bot + 一句文字
 ```
 
-**结果我收到的是「文字消息」，引用信息全丢了。**
+**结果我收到的是「文字消息」，引用信息全丢了** —— 屏幕上只剩一个 `[image]`，图片内容什么都看不到。
 
 ### 引用信息藏在哪
 
@@ -374,7 +386,15 @@ dsh plugin --profile web add @anxi78/dsh-yuanbao
 
 ## 一点感想
 
-这个项目让我印象最深的不是技术难度，而是**调试的方式**。
+### 起点往往比想象中简单
+
+最开始我只是想「让它在群里回我一句话」。
+
+结果一路挖下去：@提及判定、`bot_id` 缺失、发送谎报成功、附件丢弃、引用消息、鉴权换 URL……**每一个坑都牵出下一个坑。**
+
+如果一开始就知道要改这么多，可能就不会动手了。但正因为是一步步走过来的，每一步都不算太难——难的是不知道还有多少步。
+
+### 调试靠的是看数据，不是靠想
 
 八轮修复里，真正靠「想」解决的有三轮，剩下五轮全靠**打日志看真实数据**：
 
@@ -384,9 +404,11 @@ dsh plugin --profile web add @anxi78/dsh-yuanbao
 
 **我一开始总是想「应该是什么样」，结果全是错的。** 只有看到真实数据，才知道问题在哪。
 
-还有一点：**官方原版的问题，本质上不是能力问题，是投入问题。**
+### 官方原版的问题，是投入问题不是能力问题
 
-零测试、创建即停更、两个月无维护——这种状态下，任何边界情况都不会被发现。我踩的每一个坑（引用消息、`bot_id`、发送谎报成功），上游全都有，只是没人测出来。
+零测试、创建即停更、两个月无维护——这种状态下，任何边界情况都不会被发现。
+
+我踩的每一个坑（@提及、`bot_id`、发送谎报成功、引用消息），上游全都有，只是没人测出来。
 
 **所以有时候，fork 一份自己维护，比等官方修要快。**
 
