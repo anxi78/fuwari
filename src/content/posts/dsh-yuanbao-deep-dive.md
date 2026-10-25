@@ -1,7 +1,7 @@
 ---
-title: 手搓 dsh-yuanbao：从「群里 @ 它不回」到「引用消息全打通」
+title: 手搓 dsh-yuanbao：从「@ 谁都回」到「引用消息全打通」
 published: 2026-10-25T21:30:00
-description: '从「群里 @ 它一次都不回」开始，记录给 DSH 写元宝通道插件的完整过程，以及官方原版的几个真实问题。'
+description: '从「群里 @ 谁都回」开始，记录给 DSH 写元宝通道插件的完整过程，以及官方原版的几个真实问题。'
 tags: [DSH, 插件开发, 逆向, 踩坑记录]
 draft: false
 lang: 'zh_CN'
@@ -15,9 +15,9 @@ lang: 'zh_CN'
 
 装上之后，私聊是通的。但一进群就出问题：
 
-**在群里 @ 它，它不回。**
+**群里不管 @ 谁，它都要回。**
 
-不是偶尔不回，是**一次都不回**。消息发出去，界面上什么反应都没有，就像那个 @ 从来没发生过。
+@ 它，它回；@ 别人，它也回；@ 全体，它还是回。整个群变成它的单口相声现场，别人聊个天它都要插一脚。
 
 这就是一切的起点。
 
@@ -36,21 +36,54 @@ lang: 'zh_CN'
 
 **零测试、创建即停更、两个月无维护。** 所以下面这些问题，本质上不是「写错了」，而是「没人测过」。
 
-### 问题一：@提及判定失效，所有群消息都不回
+### 问题一：@ 谁都回（判定逻辑写反了）
 
-群聊里判断「有没有 @ 我」时，原版是这么写的：
+群聊里判断「有没有 @ 我」，上游原版是这么写的：
 
 ```typescript
-if (customContent?.user_id === botId) { ... }
+function detectMention(body, text, botId): boolean {
+  if (botId && (text.includes(botId) || text.includes(`@${botId}`))) return true;
+  return body.some(elem => {
+    const content = elem.msg_content ?? {};
+    if (elem.msg_type !== 'TIMCustomElem') return false;
+    const desc = typeof content.desc === 'string' ? content.desc.trim() : '';
+    return desc.startsWith('@');      // ← 问题在这
+  });
+}
 ```
 
-问题是：如果 `botId` 拿不到（比如 sign-token 还没换回来），这个比较永远是 `false`，插件就认为「没人 @ 我」，于是**所有群消息都被丢弃**。
+**关键就是最后那行 `desc.startsWith('@')`。**
 
-而且它不区分两种情况：
-- 确实没人 @ 我
-- 我根本没有身份可以比对
+它的语义是：**只要消息体里出现任何一个以 `@` 开头的元素，就认为 bot 被 @ 了。**
 
-**这就是我踩到的第一个坑。** 表面上「插件装好了、也连上了」，但群里怎么 @ 都没反应——因为它在更早的一步就把消息丢掉了，连日志都只是轻描淡写一句「group message without mention」。
+它压根没比对 `user_id`——@ 的是谁完全不看。
+
+结果就是：群里 @ 张三、@ 李四、@ 全体，只要带个 @ 符号，bot 全部当成在叫自己，统统回复。
+
+**修法**：精确比对 `user_id`。
+
+```typescript
+function detectMention(body, text, botId): boolean {
+  const mentions = extractMentions(body);
+  // Fail closed: without a known bot identity we cannot tell whether a mention
+  // targets this bot, so we never claim one. Replying to every @mention is far
+  // worse than staying silent -- the group would see the bot answer messages
+  // addressed to other members.
+  if (!botId) return false;
+  if (mentions.some(m => m.userId === botId)) return true;
+  // Fallback for payloads that omit user_id: match the bot id in the @text.
+  if (mentions.some(m => m.userId === '' && m.text.replace(/^@/, '') === botId)) return true;
+  return text.includes(`@${botId}`);
+}
+```
+
+三点改动：
+
+1. **比对 `userId === botId`** —— 只有 @ 的确实是这个 bot 才响应
+2. **拿不到 botId 时 fail closed** —— 宁可沉默，也不要在群里抢别人的话
+3. **留了 `text.includes('@botId')` 兜底** —— 应对 payload 里没带 `user_id` 的情况
+
+另外 `stripMention` 也一起改了：原来会把所有 `@xxx` 都从文本里剥掉，现在只剥掉 @ 自己的，别人被 @ 的名字保留下来，Agent 还能看到上下文。
 
 **修法**：优先用配置的 `botId`，否则回退到 sign-token 解析出的 id；两种情况分开打日志。
 
@@ -388,7 +421,7 @@ dsh plugin --profile web add @anxi78/dsh-yuanbao
 
 ### 起点往往比想象中简单
 
-最开始我只是想「让它在群里回我一句话」。
+最开始我只是想「让它别在群里乱插话」。
 
 结果一路挖下去：@提及判定、`bot_id` 缺失、发送谎报成功、附件丢弃、引用消息、鉴权换 URL……**每一个坑都牵出下一个坑。**
 
@@ -408,7 +441,7 @@ dsh plugin --profile web add @anxi78/dsh-yuanbao
 
 零测试、创建即停更、两个月无维护——这种状态下，任何边界情况都不会被发现。
 
-我踩的每一个坑（@提及、`bot_id`、发送谎报成功、引用消息），上游全都有，只是没人测出来。
+我踩的每一个坑（@谁都回、`bot_id`、发送谎报成功、引用消息），上游全都有，只是没人测出来。
 
 **所以有时候，fork 一份自己维护，比等官方修要快。**
 
