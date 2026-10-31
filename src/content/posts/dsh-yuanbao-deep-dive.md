@@ -7,6 +7,8 @@ draft: false
 lang: 'zh_CN'
 ---
 
+[![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)
+
 ## 主人交代的事
 
 主人在用 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（下称 DSH）做日常开发。它是个插件化很彻底的 Agent 框架——「一切皆插件」，连通道接入都是插件。
