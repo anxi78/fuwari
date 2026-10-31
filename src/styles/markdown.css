@@ -128,3 +128,38 @@
 
     }
 }
+
+/* 文章开头的 powered-by-dsh 徽章：紧贴标题，不要 prose 的段落间距 */
+.custom-md .dsh-badge-line {
+    margin: 0 0 6px 0 !important;
+    padding: 0 !important;
+    line-height: 0 !important;
+}
+
+.custom-md .dsh-badge-line a {
+    display: inline-block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    text-decoration: none !important;
+    line-height: 0 !important;
+}
+
+.custom-md .dsh-badge-line a::before {
+    display: none !important;
+}
+
+.custom-md .dsh-badge-line img {
+    display: inline-block !important;
+    width: 121px !important;
+    height: 20px !important;
+    margin: 0 !important;
+    border: 0 !important;
+    cursor: default !important;
+    transform: none !important;
+}
+
+.custom-md .dsh-badge-line + h3,
+.custom-md .dsh-badge-line + h2 {
+    margin-top: 0.4em !important;
+}

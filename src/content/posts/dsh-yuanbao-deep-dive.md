@@ -7,7 +7,7 @@ draft: false
 lang: 'zh_CN'
 ---
 
-[![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)
+<p class="dsh-badge-line"><a href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="nofollow"><img src="https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white" width="121" height="20" alt="powered by dsh"></a></p>
 
 ## 主人交代的事
 
